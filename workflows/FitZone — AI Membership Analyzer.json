@@ -1,0 +1,321 @@
+{
+  "name": "FitZone — AI Membership Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Thank you for your inquiry! We have analyzed your goals and sent a personalized membership recommendation to your email. See you at FitZone!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1152,
+        16
+      ],
+      "id": "726a447f-a6cd-4e13-a3b1-c0f11101ddbd",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fitzone-inquiry",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "933e67fd-4d7d-4318-b760-2c472e5df94c",
+      "name": "Member Inquiry Form",
+      "webhookId": "eef9f02d-f524-4831-8cdc-0666aeae177a"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a friendly and professional fitness membership consultant for FitZone Gym.\n\nYour job is to recommend the BEST membership plan based on the customer's:\n- fitness goals\n- budget\n- experience level\n- lifestyle\n- commitment level\n- student status\n\nYou should sound:\n- supportive\n- motivational\n- conversational\n- realistic\n- not overly robotic\n\nCUSTOMER INQUIRY:\n\nName: {{ $json.body.name }}\nAge: {{ $json.body.age }}\nGoal: {{ $json.body.goal }}\nMonthly Budget: PHP {{ $json.body.budget }}\nStudent: {{ $json.body.student }}\n\nMEMBERSHIP PLANS:\n\n- Basic — PHP 799/month\n  Best for:\n  - beginners\n  - casual gym goers\n  - limited schedules\n  - budget-conscious members\n\n- Standard — PHP 1,299/month\n  Best for:\n  - consistent gym members\n  - muscle building\n  - weight loss programs\n  - members training 3–5x weekly\n\n- Premium — PHP 1,999/month\n  Best for:\n  - serious fitness goals\n  - advanced training\n  - athletes\n  - highly committed members\n\n- Student — PHP 599/month\n  Best for:\n  - students with valid ID\n  - beginner fitness journeys\n  - affordable access\n\nIMPORTANT DECISION RULES:\n\n- Recommend ONLY ONE plan.\n- Recommend the plan and monthly price wrapped in <strong> tags like this: <strong>Basic Plan at PHP 799/month</strong>\n- The recommendation must realistically match the customer's budget.\n- If the customer is a student and budget-conscious, prioritize the Student plan.\n- If the customer is a beginner, avoid overselling Premium unless strongly justified.\n- If the customer's budget is below a plan price, do not recommend that plan.\n- Consider workout frequency and commitment level from their goals.\n- Be encouraging but realistic.\n\nRESPOND WITH A SHORT FRIENDLY EMAIL BODY ONLY.\n- Start with: Hi [first name],\n- Mention their specific goal naturally\n- Recommend the plan and monthly price\n- Give a warm genuine reason why it fits them\n- End with one encouraging sentence\n- Sign off as: FitZone Gym Team\n- NO labels like RECOMMENDED PLAN: or REASON:\n- NO bullet points\n- Maximum 4 short paragraphs\n- Write directly TO the customer"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        176,
+        16
+      ],
+      "id": "eb890c96-67cc-4d42-b9fa-da0d77de868d",
+      "name": "AI: Analyze & Recommend Plan",
+      "credentials": {
+        "openAiApi": {
+          "id": "jsjMi2GFGRHaQKJm",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "elayysd@gmail.com",
+        "subject": "=FitZone Membership Recommendation",
+        "message": "={{ $('AI: Analyze & Recommend Plan').item.json.output[0].content[0].text.split('\\n').map(line => line ? '<p>' + line + '</p>' : '').join('') }}",
+        "options": {
+          "senderName": "FitZone Gym"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        528,
+        16
+      ],
+      "id": "c5f7d444-89d9-415f-8cd7-d28a304efdc8",
+      "name": "Gmail: Recommendation Email",
+      "webhookId": "183b9491-f947-44a1-9399-3d71ea933f0c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "BkJ2XKJmjphznp4z",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5331570066",
+        "text": "=💪 NEW MEMBERSHIP INQUIRY - FitZone\n\n👤 Name: {{ $('Member Inquiry Form').item.json.body.name }}\n📧 Email: {{ $('Member Inquiry Form').item.json.body.email }}\n📞 Phone: {{ $('Member Inquiry Form').item.json.body.phone }}\n🎯 Goal: {{ $('Member Inquiry Form').item.json.body.goal }}\n💰 Budget: PHP {{ $('Member Inquiry Form').item.json.body.budget }}\n\n✅ Recommended Plan: {{ $('AI: Analyze & Recommend Plan').item.json.output[0].content[0].text.split('<strong>')[1].split('</strong>')[0] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        16
+      ],
+      "id": "11450562-44cb-4f61-a401-af96a71f9166",
+      "name": "Telegram: Staff Notification",
+      "webhookId": "e1bf1c9b-d06a-43cb-8010-ba9a24f3b801",
+      "credentials": {
+        "telegramApi": {
+          "id": "rRFpLpiUBHiOgkTM",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1q2zRrV4933pMXFE18XseODBrXm4NuQqOv-yxo4CSypg",
+          "mode": "list",
+          "cachedResultName": "FitZone - Membership Inquiries",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1q2zRrV4933pMXFE18XseODBrXm4NuQqOv-yxo4CSypg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1q2zRrV4933pMXFE18XseODBrXm4NuQqOv-yxo4CSypg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Member Inquiry Form').item.json.body.name }}",
+            "Email": "={{ $('Member Inquiry Form').item.json.body.email }}",
+            "Phone": "={{ $('Member Inquiry Form').item.json.body.phone }}",
+            "Age": "={{ $('Member Inquiry Form').item.json.body.age }}",
+            "Goal": "={{ $('Member Inquiry Form').item.json.body.goal }}",
+            "Budget ": "={{ $('Member Inquiry Form').item.json.body.budget }}",
+            "Date Received": "={{ $now.toFormat('MMMM d, yyyy - hh:mm a') }}",
+            "Status ": "New Inquiry",
+            "Recommended Plan": "={{ $('AI: Analyze & Recommend Plan').item.json.output[0].content[0].text.split('<strong>')[1].split('</strong>')[0] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Age",
+              "displayName": "Age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Goal",
+              "displayName": "Goal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget ",
+              "displayName": "Budget ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommended Plan",
+              "displayName": "Recommended Plan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status ",
+              "displayName": "Status ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Received",
+              "displayName": "Date Received",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        944,
+        16
+      ],
+      "id": "ff97d07f-e94c-4b84-82f7-45fdac1aedb3",
+      "name": "CRM: Log Inquiry",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "plDn6sQkx7MbowfL",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Member Inquiry Form": {
+      "main": [
+        [
+          {
+            "node": "AI: Analyze & Recommend Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Analyze & Recommend Plan": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Recommendation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Recommendation Email": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Staff Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Staff Notification": {
+      "main": [
+        [
+          {
+            "node": "CRM: Log Inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: Log Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a5ca0654-09b3-4e60-969a-015fc29f9627",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1e47f1ac8b0e43cb42acfdb23ec04cf6e4f6e87451a59e9ef5056f3253201fc8"
+  },
+  "id": "HdAy1hDKciHeJFkV",
+  "tags": []
+}
